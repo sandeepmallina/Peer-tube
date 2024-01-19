@@ -12,7 +12,7 @@ const connectDB = async () => {
       `${process.env.MONGODB_URI}/${DB_NAME}`
     );
     console.log(
-      "Mongoose connection is established DB HOST",
+      "Mongoose connection is established DB HOST:",
       connectionInstance.connection.host
     );
   } catch (err) {
