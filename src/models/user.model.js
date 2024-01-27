@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bycrypt from "bcrypt";
 const userSchema = new mongoose.Schema(

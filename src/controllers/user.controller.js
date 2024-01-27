@@ -14,12 +14,12 @@ export const registerUser = asyncHandler(async (req, res) => {
   // check for user creation
   // return res
 
-  const { firstName, username, email, password } = req.body;
+  const { fullName, username, email, password } = req.body;
 
   //   some takes an array and traverses every field every value and check the given condition if it satisfies it returns
   //   true .we can use map here but map returns an array
   if (
-    [firstName, username, email, password].some((field) => field?.trim() === "")
+    [fullName, username, email, password].some((field) => field?.trim() === "")
   ) {
     throw new ApiError(400, "All fields are required");
   }
@@ -30,27 +30,38 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   //   res.files here is provided by the middleware  multer
-  console.log(res.files);
-  const avatarLocalpath = res.files?.avatar[0]?.path;
 
-  if (!avatarLocalpath) {
+  console.log(req.files);
+
+  const avatarLocalPath = req.files?.avatar[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // console.log(coverImageLocalPath, "coverImage");
+
+  //  when you're skipping a cover image the entire res.files is having only avatar
+  //  also we have to explicitly cheque for every value
+  let coverImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
+
+  if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
-  //  Here cloudinary will return a success object that contains url
-  const avatar = await uploadOnCloudinary(avatarLocalpath);
-  const coverImageLocalpath = res.files?.coverImage[0]?.path;
 
-  let coverImage;
-  if (coverImageLocalpath) {
-    coverImage = await uploadOnCloudinary(avatarLocalpath);
-  }
   if (!avatar) {
-    throw new ApiError(402, "check the Avatar file ");
+    throw new ApiError(400, "Avatar file is required for upload");
   }
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
   const user = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage.url || "",
+    coverImage: coverImage?.url || "",
     username: username.toLowerCase(),
     email,
     password,
