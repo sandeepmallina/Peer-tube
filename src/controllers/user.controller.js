@@ -2,7 +2,7 @@ import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/aysncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefereshTokens = async (userId) => {
@@ -50,7 +50,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   //   res.files here is provided by the middleware  multer
 
-  console.log(req.files);
+  // console.log(req.files);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
   // const coverImageLocalPath = req.files?.coverImage[0]?.path;
@@ -64,18 +64,21 @@ export const registerUser = asyncHandler(async (req, res) => {
     Array.isArray(req.files.coverImage) &&
     req.files.coverImage.length > 0
   ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
+    coverImageLocalPath = req.files?.coverImage[0]?.path;
   }
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required for upload");
   }
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  let coverImage;
+  if (coverImageLocalPath) {
+    coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  }
 
   const user = await User.create({
     fullName,
@@ -122,7 +125,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Password is incorrect");
   }
 
-  const { refreshToken, accessToken } = await getAccessTokenAndRefreshToken(
+  const { refreshToken, accessToken } = await generateAccessAndRefereshTokens(
     userExist._id
   );
 
@@ -217,4 +220,211 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid refresh token");
   }
+});
+
+export const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Invaid password");
+  }
+  user.password = newPassword;
+  user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed Succesfully"));
+});
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current User fetched successfully"));
+});
+export const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+
+  if (!fullName || !email) {
+    throw new ApiError(400, "All account details are required");
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName: fullName,
+        email: email,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account Updated successfully"));
+});
+
+export const updateUserAvatarImage = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  const { avatar: avatarImageUrl } = req.user;
+
+  const avatarImageId = avatarImageUrl.split("/").splice(-1)[0].split(".")[0];
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is required for update");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Avatar file is required for updation");
+  }
+  await deleteOnCloudinary(avatarImageId);
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
+});
+
+export const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  const { coverImage: coverImageUrl } = req.user;
+
+  const coverImageId = coverImageUrl.split("/").splice(-1)[0].split(".")[0];
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover Image file is missing");
+  }
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading on avatar");
+  }
+  await deleteOnCloudinary(coverImageId);
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
+
+export const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(400, "User name inValid ");
+  }
+
+  // User.find(username)
+  /**
+   * * Here when the user hit the channel via url so we get the channel name from the parms
+   * * then we check  that channel name in the mongo db database .Then we  find the username get _id of that channel
+   * *
+   * *
+   */
+  const channel = await User.aggregate([
+    {
+      /**
+       * * Here we are using a match stage to find the channel name in the database
+       * * $match - Finds the user document matching the provided username.
+       */
+      $match: { username: username?.toLowerCase() },
+    },
+    {
+      /**
+       * * Here we are using lookup to connect with subscription schema
+       * * and user schema based on the id and the channel id here channel is a user
+       * * The lookup adds this to the user model
+       */
+      /**
+       * * The first $lookup takes the user._id field and searches for it in the 'channel' field of the subscriptions collection.
+       * * So it is looking for documents in subscriptions where the channel field matches the _id of the user document from $match.
+       */
+
+      $lookup: {
+        /**
+         * * Here lookup traverses every document in the subscriptions Collection
+         */
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    /**
+     * *The second $lookup again takes the user._id field but now searches for it in the 'subscriber' field of subscriptions.
+     * * So it looks for documents where the subscriber field matches the user _id.
+     *
+     *
+     */
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribeTo",
+      },
+    },
+    {
+      /**
+       * * Here we are adding some fields to the user model
+       */
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribersToCount: {
+          $size: "$subscribeTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        email: 1,
+        avatar: 1,
+        coverImage: 1,
+        channelsSubscribersToCount: 1,
+        subscribersCount: 1,
+        isSubscribed: 1,
+      },
+    },
+  ]);
+  /**
+   * * Here aggregate function returns array channel
+   */
+  if (!channel.length) {
+    throw new ApiError(404, "Channel does not exist");
+  }
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "user channel fetched successfully")
+    );
 });
