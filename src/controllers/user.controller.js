@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -426,5 +427,67 @@ export const getUserChannelProfile = asyncHandler(async (req, res) => {
     .status(200)
     .json(
       new ApiResponse(200, channel[0], "user channel fetched successfully")
+    );
+});
+
+export const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        /**
+         * * Here we are using new mongoose.Types.ObjectId(req.user._id) because as we are using mongoose
+         * * the mongoose automatically converts the id into
+         * * the object id as the objectid(Biubwiebdui....) is stored in the
+         * * Mongodb so while using aggregations the code itself
+         * * goes without the Mongooose wrapper so we need
+         * * to unwrap that and get the objectid(Biubwiebdui....)
+         */
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        // this nested pipline to get the owner details
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $arrayElements: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch History failed Successfully"
+      )
     );
 });
