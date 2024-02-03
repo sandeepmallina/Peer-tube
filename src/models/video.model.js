@@ -40,6 +40,10 @@ const videoSchema = new Schema(
   }
 );
 
+/**
+ * * The mongooseAggregatePaginate plugin allows paginating MongoDB aggregate queries in a Mongoose model.
+ */
+
 videoSchema.plugin(mongooseAggregatePaginate);
 
-export const video = mongoose.model("Video", videoSchema);
+export const Video = mongoose.model("Video", videoSchema);

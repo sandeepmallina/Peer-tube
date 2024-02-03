@@ -3,6 +3,7 @@ import {
   changeCurrentPassword,
   getCurrentUser,
   getUserChannelProfile,
+  getWatchHistory,
   loginUser,
   logoutUser,
   refreshAccessToken,
@@ -50,4 +51,6 @@ router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 /**
  * ! TODO: Add the watch history
  */
+
+router.route("/watch-history").get(verifyJWT, getWatchHistory);
 export default router;

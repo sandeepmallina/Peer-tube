@@ -155,11 +155,12 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 export const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     userId,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        // this removes the field from the document
+        refreshToken: 1,
       },
     },
     {
@@ -473,7 +474,7 @@ export const getWatchHistory = asyncHandler(async (req, res) => {
           {
             $addFields: {
               owner: {
-                $arrayElements: "$owner",
+                $arrayElemAt: ["$owner", 0],
               },
             },
           },
