@@ -29,15 +29,29 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-const deleteOnCloudinary = async (imageId) => {
-  const response = await cloudinary.uploader.destroy(
-    imageId,
-    function (result) {
-      return result;
-    }
-  );
-
-  return response;
+const deleteOnCloudinary = async (assetIds, type) => {
+  const deleteAssetIds = [...assetIds];
+  // const response = await cloudinary.uploader.destroy(
+  //   assetId,
+  //   function (result) {
+  //     return result;
+  //   }
+  // );
+  // console.log("File deleted successfully : ", response);
+  // return response;
+  type === "images"
+    ? cloudinary.api
+        .delete_resources(deleteAssetIds, {
+          type: "upload",
+          resource_type: "image",
+        })
+        .then(console.log)
+    : cloudinary.api
+        .delete_resources(deleteAssetIds, {
+          type: "upload",
+          resource_type: "video",
+        })
+        .then(console.log);
 };
 
 export { uploadOnCloudinary, deleteOnCloudinary };
