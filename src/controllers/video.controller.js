@@ -4,6 +4,94 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/aysncHandler.js";
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+
+export const getAllVideos = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    query,
+    sortBy = "createdAt",
+    sortType = 1,
+    userId,
+  } = req.query;
+  // console.log(
+  //   page,
+  //   limit,
+  //   query,
+  //   sortType,
+  //   sortBy,
+  //   userId,
+  //   "from the video controller"
+  // );
+  //TODO: get all videos based on query, sort, pagination
+
+  const pipeline = [];
+
+  const matchStage = {
+    $match: {
+      $or: [],
+    },
+  };
+  if (!query && !userId) {
+    throw new ApiError(401, "EIther Userid or query is required");
+  }
+  if (query) {
+    matchStage.$match.$or.push({ title: { $regex: query, $options: "i" } });
+  }
+  if (userId) {
+    matchStage.$match.$or.push({ owner: new mongoose.Types.ObjectId(userId) });
+  }
+  pipeline.push(matchStage);
+
+  /**
+   * !  dont resolve this when using pagination
+   * * Building Dynamic Pipelines: Aggregation pipelines can be complex and may need to be dynamically constructed 
+   *  *based on user input, application logic, or other factors.
+
+Conditional Operations: As in your case, you might want to conditionally include certain stages or expressions in the aggregation pipeline based on the state of your application or user input.
+   */
+
+  //const videosAggregate = Video.aggregate([
+  //   {
+  //     $match: {
+  //       $or: [
+  //         { title: { $regex: query, $options: "i" } },
+  //         {
+  //           owner: {
+  //             $eq: new mongoose.Types.ObjectId(userId),
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  // ]);
+
+  const videosAggregate = Video.aggregate(pipeline);
+  if (!videosAggregate) {
+    throw new ApiError(404, "No video found");
+  }
+  // console.log(videosAggregate);
+  const options = {
+    page: page,
+    limit: limit,
+    sort: {
+      // sort by createdAt or updatedAt
+      [sortBy]: sortType, //-1 for  sort by createdAt descending
+
+      // 1 for sort by createdAt ascending
+    },
+  };
+  // console.log(options.sort);
+
+  const result = await Video.aggregatePaginate(videosAggregate, options);
+  // console.log(result, "fromt he results");
+  // console.log(result.totalDocs, "fromt he results");
+  const videos = result?.docs;
+  res
+    .status(200)
+    .json(new ApiResponse(200, videos, "Videos fetched succesfully"));
+});
+
 export const publishVideo = asyncHandler(async (req, res) => {
   // get title,description from user
   // validate title and description
@@ -186,4 +274,29 @@ export const updateVideo = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, upadatedVideo, "Video Updated sucessfully"));
+});
+
+export const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const video = await Video.findById(videoId);
+  // console.log(video.owner);
+  const ownerId = req.user?._id;
+  if (video?.owner.toString() !== ownerId?.toString()) {
+    throw new ApiError(402, "Not authorized to delete");
+  }
+
+  const videoPublishStatus = await Video.findByIdAndUpdate(
+    videoId,
+    { isPublished: !video.isPublished },
+    { new: true }
+  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        201,
+        videoPublishStatus,
+        "Video status updated successfully"
+      )
+    );
 });
