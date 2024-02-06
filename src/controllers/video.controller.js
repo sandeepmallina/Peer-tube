@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/aysncHandler.js";
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { User } from "../models/user.model.js";
 
 export const getAllVideos = asyncHandler(async (req, res) => {
   const {
@@ -157,10 +158,36 @@ export const publishVideo = asyncHandler(async (req, res) => {
 });
 export const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  console.log(videoId);
+  const { _id } = req?.user;
+  // console.log(videoId);
+  const { views } = await Video.findOne(new mongoose.Types.ObjectId(videoId));
 
-  const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      views: views + 1,
+    },
+    { new: true }
+  );
   //   console.log(video);
+  if (_id && video) {
+    /**
+     * *Update at most one document that matches the filter criteria. If multiple documents match the filter criteria, only the
+     * *first matching document will be updated.
+     */
+    await User.updateOne(
+      { _id: _id },
+      {
+        /**
+         * *$push is used to append elements to the array
+         * * addToSet is used avoid duplicate entries to the array
+         */
+
+        $addToSet: { watchHistory: videoId },
+      }
+    );
+  }
+
   res.status(200).json(new ApiResponse(201, video, "Video found "));
 });
 

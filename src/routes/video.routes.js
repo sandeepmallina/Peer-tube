@@ -20,7 +20,7 @@ router.route("/upload-video").post(
   publishVideo
 );
 
-router.route("/v/get/:videoId").get(getVideoById);
+router.route("/v/get/:videoId").get(verifyJWT, getVideoById);
 
 router.route("/v/delete/:videoId").post(verifyJWT, deleteVideoById);
 router.route("/v/update/:videoId").patch(
