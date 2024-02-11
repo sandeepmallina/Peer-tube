@@ -14,5 +14,31 @@
 
 ## steps taken to implement Video controller 
 
-TODO: how deal with user who looiking our videos with login ?
-      how deal with user who looiking our videos many times  ?
+### TODO:
++ how deal with user who looiking our videos with login ?
+  + can we create array or views for a video ?
+
++ how deal with user who looiking our videos many times  ?
+  + if user watches a single video many times then we shoudl the id every time 
+    - No,we can use addToSet is used avoid duplicate      entries to the array
+  + how to deal with the duplicate views ?
+
+
+## controller of tweet
+ - CRUD operations on tweet 
+    - Create tweet:
+      + get user _id from the verify jwt middleware
+      + get the tweetcontent from the res.body
+      + model.create used to create the tweet document
+    - Read 
+      + get all tweet to show in the front end
+      + get the user based based on the user id
+    - Update
+      + use findOneAndUpdate .fill the fields for owner id from middle ware and tweet id 
+      + if updated successfully it returns the updated document 
+      + if not variable will be null
+      + throw error user not match
+    - Delete 
+      + use findOneAndDelete .fill the fields for owner id from middleware and tweet id  form req.params
+      + if deleted successfully it returns the deleted document 
+

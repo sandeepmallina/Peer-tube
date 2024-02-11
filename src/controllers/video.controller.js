@@ -195,17 +195,21 @@ export const deleteVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const ownerId = req.user._id;
   //   console.log(ownerId.toString(), videoId);
-  const video = await Video.findById(videoId);
+  // const video = await Video.findById(videoId);
   //   console.log(video);
-  if (!video) {
-    throw new ApiError(404, "Video not found");
-  }
+  // if (!video) {
+  //   throw new ApiError(404, "Video not found");
+  // }
   //   console.log(video?.owner.toString());
-  if (video?.owner.toString() !== ownerId?.toString()) {
-    throw new ApiError(402, "Not authorized to delete");
-  }
 
-  const { thumbnail, videoFile } = await Video.findByIdAndDelete(videoId);
+  const deletedVideo = await Video.findOneAndDelete({
+    _id: videoId,
+    owner: ownerId,
+  });
+  if (!deletedVideo) {
+    throw new ApiError(402, "Not authorized to delete ");
+  }
+  const { thumbnail, videoFile } = deletedVideo;
   //   console.log(thumbnail, videoFile);
   const deleteImageAssetIds = [];
   const videoImageAssetIds = [];
@@ -225,7 +229,9 @@ export const deleteVideoById = asyncHandler(async (req, res) => {
   videoImageAssetIds.push(videoFileId);
   await deleteOnCloudinary(videoImageAssetIds, "videos");
 
-  res.status(200).json(new ApiResponse(201, video, "Video Deleted succefully"));
+  res
+    .status(200)
+    .json(new ApiResponse(201, deletedVideo, "Video Deleted succefully"));
 });
 export const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -317,6 +323,7 @@ export const togglePublishStatus = asyncHandler(async (req, res) => {
     { isPublished: !video.isPublished },
     { new: true }
   );
+
   res
     .status(200)
     .json(

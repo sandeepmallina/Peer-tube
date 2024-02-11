@@ -14,7 +14,7 @@ export const createTweet = asyncHandler(async (req, res) => {
 
   const tweetCreated = await Tweet.create({
     owner: _id,
-    content: `${tweetheader}+${tweetContent}`,
+    content: `${tweetheader} + ${tweetContent}`,
   });
 
   res
@@ -34,9 +34,9 @@ export const updateTweet = asyncHandler(async (req, res) => {
    * ! Tweet.findOneAndDelete` takes a query object as its parameter and returns the first document that matches the query criteria.
    * ! It searches for a tweet based on the specified query and deletes it.
    */
-  const updatedTweet = await Tweet.findOneAndDelete(
+  const updatedTweet = await Tweet.findOneAndUpdate(
     { _id: tweetId, owner: _id },
-    { content: `${tweetheader}+${tweetContent}`, isEdited: true },
+    { content: `${tweetheader} + ${tweetContent}`, isEdited: true },
     { new: true }
   );
 
