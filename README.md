@@ -40,5 +40,12 @@
       + throw error user not match
     - Delete 
       + use findOneAndDelete .fill the fields for owner id from middleware and tweet id  form req.params
-      + if deleted successfully it returns the deleted document 
+      + if deleted successfully it returns the deleted document '
+
+## how does a like model work
+  + for every user interaction we create a document of liked by (user id ),
+    video id ,comment id that particular user liked.
+  + if we want the count the search for particular interaction id .for example like
+    comment id,video id,tweet id 
+ 
 

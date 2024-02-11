@@ -179,7 +179,7 @@ export const getVideoById = asyncHandler(async (req, res) => {
       { _id: _id },
       {
         /**
-         * *$push is used to append elements to the array
+         * * $push is used to append elements to the array
          * * addToSet is used avoid duplicate entries to the array
          */
 

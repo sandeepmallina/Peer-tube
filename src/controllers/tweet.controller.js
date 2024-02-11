@@ -8,7 +8,7 @@ export const createTweet = asyncHandler(async (req, res) => {
   const { _id } = req?.user;
   const { tweetheader, tweetContent } = req.body;
 
-  if (!tweetContent) {
+  if (!tweetContent || !tweetheader) {
     throw new ApiError(402, "Tweet content missing");
   }
 
