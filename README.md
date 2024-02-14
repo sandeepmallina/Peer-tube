@@ -46,6 +46,12 @@
   + for every user interaction we create a document of liked by (user id ),
     video id ,comment id that particular user liked.
   + if we want the count the search for particular interaction id .for example like
-    comment id,video id,tweet id 
+    comment id,video id,tweet id
+    
+## Playlist model
+  + while getting the list of user playlists .we should use pagination
+  + how to add or delete multiple videos to the playlist at same time 
+  
+
  
 
