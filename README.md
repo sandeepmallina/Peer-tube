@@ -1,6 +1,9 @@
 # Chai-aur-bacend
 # Push Harder
-
+## How Routing in this app  works
+  + `app.use("/api/v1/users", userRouter);` this line of code says that if the client hit the endpoint starting with `/api/v1/users` then `userRouter` gets executed .In the userRouter we use const router=Router();
+  + [refer here](https://sl.bing.net/clvBjLe36Rg) about routing used in the app 
+  
 ## steps taken to implement user controller 
   - get user details from frontend
   - validation — not empty
@@ -47,6 +50,10 @@
     video id ,comment id that particular user liked.
   + if we want the count the search for particular interaction id .for example like
     comment id,video id,tweet id
+## Comments model
+  + we need to lookup for the videos from the video collection
+  + we need to lookup for owner and owner details from users collection 
+  
     
 ## Playlist model
   + while getting the list of user playlists .we should use pagination
