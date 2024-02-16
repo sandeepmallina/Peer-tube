@@ -81,6 +81,13 @@ export const getAllLikes = asyncHandler(async (req, res) => {
   if (!userid) {
     throw new ApiError(404, "Please login ");
   }
+  /**
+   * * how nested look up works
+   * * here we we are doing first lookup on video collection using video collections
+   * *  then we are doing nested lookup for owner in video field in user collection
+   * * then we are adding field to video object as owner
+   * * Then we add field to video object by list up the  data from the video array
+   */
   const likeAggregate = Like.aggregate([
     {
       $match: {
