@@ -47,9 +47,12 @@
 
 ## how does a like model work
   + for every user interaction we create a document of liked by (user id ),
-    video id ,comment id that particular user liked.
-  + if we want the count the search for particular interaction id .for example like
-    comment id,video id,tweet id
+    video id or  comment id or tweeid  with user id.
+  + if we want the count for the comment likes  on a video .then we can count the number of comments
+    same for tweets likes 
+  + if we want to toggle the like if the videoId and userId is present in the same document  we can delete the like document from  like collection
+   ! TODO:Add the aggregatePagginate for likes 
+
 ## Comments model
   + we need to lookup for the videos from the video collection
   + we need to lookup for owner and owner details from users collection 
